@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Pick a Letter · SSL Alphabet</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #020617;
+      --panel: #020617;
+      --panel-alt: #020617;
+      --accent: #38bdf8;
+      --accent-soft: rgba(56, 189, 248, 0.16);
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --border: #1f2937;
+      --radius-lg: 18px;
+      --radius-md: 12px;
+      --shadow-soft: 0 18px 45px rgba(15, 23, 42, 0.85);
+      --transition-fast: 0.16s ease-out;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 16px;
+      background: radial-gradient(circle at top, #1e293b 0, #020617 45%, #000 100%);
+      color: var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+    }
+
+    .shell {
+      width: 100%;
+      max-width: 960px;
+      background: linear-gradient(145deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.92));
+      border-radius: 24px;
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      box-shadow: var(--shadow-soft);
+      padding: 20px 22px 22px;
+    }
+
+    .shell-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .title-block {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .title {
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .subtitle {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .badge {
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      color: var(--muted);
+      background: rgba(15, 23, 42, 0.9);
+    }
+
+    .content {
+      margin-top: 8px;
+      display: grid;
+      grid-template-columns: minmax(0, 2.2fr) minmax(0, 1.4fr);
+      gap: 16px;
+    }
+
+    @media (max-width: 860px) {
+      .content {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .panel {
+      border-radius: var(--radius-lg);
+      padding: 14px 14px 12px;
+      background: radial-gradient(circle at top left, rgba(56, 189, 248, 0.18), transparent 60%),
+                  radial-gradient(circle at bottom right, rgba(129, 140, 248, 0.18), transparent 65%),
+                  rgba(15, 23, 42, 0.98);
+      border: 1px solid rgba(30, 64, 175, 0.75);
+    }
+
+    .panel-alt {
+      border-radius: var(--radius-lg);
+      padding: 14px 14px 12px;
+      background: rgba(15, 23, 42, 0.98);
+      border: 1px solid rgba(51, 65, 85, 0.85);
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .panel-title {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .panel-caption {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .letters-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(56px, 1fr));
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .letter-tile {
+      position: relative;
+      border-radius: 999px;
+      padding: 10px 10px;
+      background: radial-gradient(circle at top, rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 1));
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      color: var(--text);
+      font-size: 16px;
+      font-weight: 600;
+      text-align: center;
+      cursor: pointer;
+      transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast);
+      user-select: none;
+    }
+
+    .letter-tile span {
+      display: block;
+    }
+
+    .letter-tile:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 12px 28px rgba(15, 23, 42, 0.9);
+      border-color: rgba(56, 189, 248, 0.9);
+      background: radial-gradient(circle at top, rgba(56, 189, 248, 0.12), rgba(15, 23, 42, 1));
+    }
+
+    .letter-tile:active {
+      transform: translateY(0);
+      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.9);
+    }
+
+    .info-list {
+      font-size: 12px;
+      color: var(--muted);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .info-list strong {
+      color: var(--text);
+    }
+
+    .tip {
+      font-size: 11px;
+      margin-top: 10px;
+      padding: 8px 9px;
+      border-radius: var(--radius-md);
+      background: rgba(15, 23, 42, 0.96);
+      border: 1px dashed rgba(55, 65, 81, 0.95);
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .status {
+      font-size: 11px;
+      margin-top: 6px;
+      color: var(--muted);
+    }
+
+    .status span {
+      font-weight: 500;
+      color: var(--accent);
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <div class="shell-header">
+      <div class="title-block">
+        <div class="title">Choose a letter to practice</div>
+        <div class="subtitle">Pick a target sign. Next page will guide you to show it to the camera and get feedback.</div>
+      </div>
+      <span class="badge">Step 1 · Select letter</span>
+    </div>
+
+    <div class="content">
+      <section class="panel">
+        <div class="panel-header">
+          <div>
+            <div class="panel-title">Letters from the model</div>
+            <div class="panel-caption">Click a letter to open the webcam and practice it.</div>
+          </div>
+        </div>
+        <div id="letters-grid" class="letters-grid"></div>
+        <div id="classes-status" class="status"></div>
+      </section>
+
+      <section class="panel-alt">
+        <div class="panel-header">
+          <div>
+            <div class="panel-title">How it works</div>
+            <div class="panel-caption">Three simple steps for each sign.</div>
+          </div>
+        </div>
+        <div class="info-list">
+          <div><strong>1. Choose a letter</strong> – This tells the model which sign you’re trying to make.</div>
+          <div><strong>2. Hold your sign</strong> – On the webcam page, press “Start capture” and hold your hand sign steady until the progress bar finishes.</div>
+          <div><strong>3. Read the feedback</strong> – The app compares your sign with the selected letter and lets you know if it matches.</div>
+        </div>
+        <div class="tip">
+          Tips for best results:
+          <ul style="margin-top:4px;padding-left:16px;">
+            <li>Make sure your hand is fully inside the camera frame.</li>
+            <li>Hold the sign steady until capture completes.</li>
+            <li>Use good lighting so your hand is clearly visible.</li>
+          </ul>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const grid = document.getElementById("letters-grid");
+      const statusEl = document.getElementById("classes-status");
+
+      function setStatus(message, isError) {
+        statusEl.textContent = message || "";
+        statusEl.style.color = isError ? "#f97373" : "#9ca3af";
+      }
+
+      async function loadClasses() {
+        try {
+          setStatus("Loading letters from the server…", false);
+          const resp = await fetch(window.location.origin + "/api/v1/classes");
+          const json = await resp.json();
+          if (!resp.ok) {
+            const msg = json.detail || ("HTTP " + resp.status);
+            setStatus("Failed to load letters: " + msg, true);
+            return;
+          }
+
+          const classes = Array.isArray(json.classes) ? json.classes : [];
+          if (!classes.length) {
+            setStatus("No letters available from the model.", true);
+            return;
+          }
+
+          grid.innerHTML = "";
+          classes.forEach((cls) => {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "letter-tile";
+            btn.textContent = String(cls);
+            btn.addEventListener("click", () => {
+              const target = encodeURIComponent(String(cls));
+              window.location.href = "/api/webcam?target=" + target;
+            });
+            grid.appendChild(btn);
+          });
+
+          setStatus("Loaded " + classes.length + " letters from the model.", false);
+        } catch (err) {
+          console.error(err);
+          setStatus("Error loading letters: " + err.message, true);
+        }
+      }
+
+      loadClasses();
+    })();
+  </script>
+</body>
+</html>
+

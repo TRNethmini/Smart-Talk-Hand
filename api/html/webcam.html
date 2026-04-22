@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>SSL Alphabet Webcam Inference</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #050816;
+      --bg-alt: #0f172a;
+      --accent: #38bdf8;
+      --accent-soft: rgba(56, 189, 248, 0.15);
+      --danger: #f97373;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --border: #1f2937;
+      --radius-lg: 16px;
+      --radius-md: 10px;
+      --shadow-soft: 0 18px 45px rgba(15, 23, 42, 0.85);
+      --transition-fast: 0.18s ease-out;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at top, #1e293b 0, #020617 45%, #000 100%);
+      color: var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+      padding: 32px 16px;
+    }
+
+    .shell {
+      width: 100%;
+      max-width: 1120px;
+      background: linear-gradient(145deg, rgba(15, 23, 42, 0.95), rgba(15, 23, 42, 0.9));
+      border-radius: 24px;
+      box-shadow: var(--shadow-soft);
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      padding: 20px 22px 22px;
+      backdrop-filter: blur(18px);
+    }
+
+    .shell-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .leds {
+      display: flex;
+      gap: 7px;
+    }
+
+    .led {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: #4b5563;
+    }
+
+    .led.red { background: #f97373; }
+    .led.amber { background: #fbbf24; }
+    .led.green { background: #4ade80; }
+
+    .title {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--muted);
+    }
+
+    .badge {
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      color: var(--muted);
+      background: rgba(15, 23, 42, 0.9);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(0, 3.2fr) minmax(0, 2.3fr);
+      gap: 18px;
+    }
+
+    @media (max-width: 880px) {
+      .grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .panel {
+      position: relative;
+      border-radius: var(--radius-lg);
+      padding: 14px 14px 13px;
+      background: radial-gradient(circle at top left, rgba(56, 189, 248, 0.15), transparent 55%),
+                  radial-gradient(circle at bottom right, rgba(129, 140, 248, 0.14), transparent 55%),
+                  radial-gradient(circle at top right, rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 0.97));
+      border: 1px solid rgba(30, 64, 175, 0.6);
+      overflow: hidden;
+    }
+
+    .panel::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at top, rgba(56, 189, 248, 0.12), transparent 55%);
+      opacity: 0.4;
+      pointer-events: none;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      gap: 8px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .panel-title {
+      font-size: 14px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .chip {
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .panel-subtitle {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .video-frame {
+      position: relative;
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      border: 1px solid rgba(15, 23, 42, 0.9);
+      background: radial-gradient(circle at top, #020617 0, #020617 55%, #000 100%);
+      aspect-ratio: 4 / 3;
+    }
+
+    video, canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: cover;
+    }
+
+    canvas {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .controls-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+      position: relative;
+      z-index: 1;
+    }
+
+    button {
+      border: none;
+      border-radius: 999px;
+      padding: 7px 14px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: linear-gradient(135deg, #0ea5e9, #22d3ee);
+      color: #0b1220;
+      box-shadow: 0 10px 24px rgba(8, 47, 73, 0.75);
+      transition: transform var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast), opacity var(--transition-fast);
+    }
+
+    button.secondary {
+      background: rgba(15, 23, 42, 0.95);
+      color: var(--muted);
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(148, 163, 184, 0.5);
+    }
+
+    button.danger {
+      background: linear-gradient(135deg, #fb7185, #f97373);
+      color: #111827;
+    }
+
+    button:disabled {
+      opacity: 0.45;
+      cursor: default;
+      box-shadow: none;
+      transform: none;
+    }
+
+    button:not(:disabled):hover {
+      transform: translateY(-1px);
+      box-shadow: 0 14px 30px rgba(8, 47, 73, 0.8);
+    }
+
+    button.secondary:not(:disabled):hover {
+      box-shadow: 0 14px 30px rgba(15, 23, 42, 0.85);
+    }
+
+    .btn-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.9);
+    }
+
+    .btn-dot.live {
+      background: #22c55e;
+      box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.3);
+    }
+
+    .btn-dot.ws {
+      background: #38bdf8;
+    }
+
+    .status-chip {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.96);
+      color: var(--muted);
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: #4b5563;
+    }
+
+    .status-dot.ok { background: #22c55e; }
+    .status-dot.warn { background: #eab308; }
+    .status-dot.err { background: #f97373; }
+
+    .predictions {
+      margin-top: 8px;
+      padding: 10px 12px;
+      border-radius: var(--radius-md);
+      border: 1px solid rgba(30, 64, 175, 0.7);
+      background: radial-gradient(circle at top left, rgba(56, 189, 248, 0.16), transparent 60%),
+                  rgba(15, 23, 42, 0.98);
+    }
+
+    .pred-label {
+      font-size: 26px;
+      font-weight: 650;
+      letter-spacing: 0.04em;
+      margin-bottom: 4px;
+    }
+
+    .pred-confidence {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .topk-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+      gap: 6px;
+      margin-top: 6px;
+    }
+
+    .topk-item {
+      padding: 5px 7px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.96);
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      font-size: 11px;
+      display: flex;
+      justify-content: space-between;
+      gap: 6px;
+      color: var(--muted);
+    }
+
+    .meta-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 6px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .meta-row strong {
+      font-weight: 500;
+      color: #e5e7eb;
+    }
+
+    .log {
+      margin-top: 10px;
+      padding: 8px 10px;
+      border-radius: var(--radius-md);
+      background: rgba(15, 23, 42, 0.96);
+      border: 1px dashed rgba(55, 65, 81, 0.9);
+      font-size: 11px;
+      max-height: 110px;
+      overflow: auto;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .log-entry {
+      white-space: pre-wrap;
+    }
+
+    .progress-shell {
+      margin-top: 6px;
+      width: 100%;
+      height: 6px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.9);
+      overflow: hidden;
+      border: 1px solid rgba(30, 64, 175, 0.8);
+    }
+
+    #progress-bar {
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, #22c55e, #a3e635);
+      transition: width 0.15s ease-out;
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <div class="shell-header">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="leds">
+          <span class="led red"></span>
+          <span class="led amber"></span>
+          <span class="led green"></span>
+        </div>
+        <div class="title">SSL Alphabet · Realtime Webcam Tester</div>
+      </div>
+      <span class="badge">WebSocket · Streaming</span>
+    </div>
+
+    <div class="grid">
+      <section class="panel">
+        <div class="panel-header">
+          <div>
+            <div class="panel-title">
+              Webcam feed
+              <span class="chip">Practice sign</span>
+            </div>
+            <div class="panel-subtitle">
+              Target letter:
+              <strong id="target-letter">Free practice</strong>
+            </div>
+          </div>
+          <span id="camera-status" class="status-chip">
+            <span class="status-dot"></span>
+            Camera idle
+          </span>
+        </div>
+
+        <div class="video-frame">
+          <video id="video" playsinline autoplay muted></video>
+          <canvas id="overlay" hidden></canvas>
+        </div>
+
+        <div class="controls-row" style="margin-top:12px;">
+          <button id="start-camera-btn">
+            <span class="btn-dot live"></span>
+            Start camera
+          </button>
+          <button id="stop-camera-btn" class="secondary" disabled>
+            <span class="btn-dot"></span>
+            Stop camera
+          </button>
+          <button id="start-capture-btn" class="secondary" disabled>
+            <span class="btn-dot live"></span>
+            Start capture
+          </button>
+          <button id="cancel-capture-btn" class="secondary" disabled>
+            <span class="btn-dot"></span>
+            Cancel capture
+          </button>
+          <button id="reset-buffer-btn" class="secondary">
+            <span class="btn-dot"></span>
+            Reset frames
+          </button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <div>
+            <div class="panel-title">
+              Feedback
+              <span class="chip">Step 3 · Check result</span>
+            </div>
+            <div class="panel-subtitle">Capture a short sequence, then see if it matches your chosen letter.</div>
+          </div>
+        </div>
+
+        <div class="predictions">
+          <div id="pred-label" class="pred-label">–</div>
+          <div id="pred-confidence" class="pred-confidence">Waiting for frames…</div>
+          <div class="meta-row">
+            <div><strong>Status:</strong> <span id="pred-status">idle</span></div>
+            <div><strong>Captured frames:</strong> <span id="buffer-count">0</span> / <span id="target-frames">30</span></div>
+          </div>
+          <div class="progress-shell">
+            <div id="progress-bar"></div>
+          </div>
+          <div class="topk-list" id="topk-list"></div>
+          <div id="feedback-text" class="log-entry" style="margin-top:8px;"></div>
+          <div id="tips-text" class="tip" style="margin-top:6px; display:none;"></div>
+        </div>
+
+        <div class="log" id="log"></div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const video = document.getElementById("video");
+      const overlay = document.getElementById("overlay");
+      const startCameraBtn = document.getElementById("start-camera-btn");
+      const stopCameraBtn = document.getElementById("stop-camera-btn");
+      const startCaptureBtn = document.getElementById("start-capture-btn");
+      const cancelCaptureBtn = document.getElementById("cancel-capture-btn");
+      const resetBufferBtn = document.getElementById("reset-buffer-btn");
+
+      const cameraStatus = document.getElementById("camera-status");
+      const predLabel = document.getElementById("pred-label");
+      const predConfidence = document.getElementById("pred-confidence");
+      const predStatus = document.getElementById("pred-status");
+      const bufferCount = document.getElementById("buffer-count");
+      const targetFramesEl = document.getElementById("target-frames");
+      const progressBar = document.getElementById("progress-bar");
+      const topkList = document.getElementById("topk-list");
+      const logEl = document.getElementById("log");
+      const targetLetterEl = document.getElementById("target-letter");
+      const feedbackText = document.getElementById("feedback-text");
+      const tipsText = document.getElementById("tips-text");
+
+      const TARGET_FRAMES = 30; // should match SEQ_LEN from the backend
+      const CAPTURE_INTERVAL_MS = 120;
+      targetFramesEl.textContent = String(TARGET_FRAMES);
+
+      let mediaStream = null;
+      let captureTimer = null;
+      let capturedFrames = [];
+
+      const params = new URLSearchParams(window.location.search);
+      const targetLetter = params.get("target");
+      if (targetLetter) {
+        targetLetterEl.textContent = targetLetter;
+      } else {
+        targetLetterEl.textContent = "Free practice";
+      }
+
+      function setCameraState(stateText, colorClass) {
+        cameraStatus.querySelector(".status-dot").className = "status-dot " + (colorClass || "");
+        cameraStatus.lastChild.nodeValue = " " + stateText;
+      }
+
+      function setPredictionState({ status, label, confidence, frames, topk, error }) {
+        if (error) {
+          predLabel.textContent = "–";
+          predConfidence.textContent = error;
+          predStatus.textContent = "error";
+          bufferCount.textContent = frames != null ? String(frames) : "0";
+          topkList.innerHTML = "";
+          feedbackText.textContent = "";
+          tipsText.style.display = "none";
+          return;
+        }
+
+        predStatus.textContent = status || "idle";
+
+        if (status === "buffering") {
+          predLabel.textContent = "Buffering…";
+          predConfidence.textContent = "Collecting frames (" + (frames || 0) + "/30)";
+          bufferCount.textContent = frames != null ? String(frames) : "0";
+          topkList.innerHTML = "";
+          return;
+        }
+
+        if (status === "prediction") {
+          predLabel.textContent = label || "–";
+          if (typeof confidence === "number") {
+            const pct = (confidence * 100).toFixed(1);
+            predConfidence.textContent = "Top-1 confidence: " + pct + "%";
+          } else {
+            predConfidence.textContent = "Prediction received";
+          }
+          if (typeof frames === "number") {
+            bufferCount.textContent = String(frames);
+          }
+
+          if (Array.isArray(topk) && topk.length) {
+            topkList.innerHTML = "";
+            topk.slice(0, 5).forEach((item) => {
+              const li = document.createElement("div");
+              li.className = "topk-item";
+              const labelSpan = document.createElement("span");
+              labelSpan.textContent = item.label;
+              const probSpan = document.createElement("span");
+              probSpan.textContent = (item.prob * 100).toFixed(1) + "%";
+              li.appendChild(labelSpan);
+              li.appendChild(probSpan);
+              topkList.appendChild(li);
+            });
+          }
+        }
+      }
+
+      function appendLog(message) {
+        const now = new Date();
+        const ts = now.toISOString().split("T")[1].replace("Z", "");
+        const div = document.createElement("div");
+        div.className = "log-entry";
+        div.textContent = "[" + ts + "] " + message;
+        logEl.prepend(div);
+        const children = Array.from(logEl.children);
+        if (children.length > 60) {
+          children.slice(60).forEach((el) => el.remove());
+        }
+      }
+
+      async function startCamera() {
+        if (mediaStream) return;
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+          mediaStream = stream;
+          video.srcObject = stream;
+          const track = stream.getVideoTracks()[0];
+          const settings = track.getSettings ? track.getSettings() : {};
+          const width = settings.width || 640;
+          const height = settings.height || 480;
+          overlay.width = width;
+          overlay.height = height;
+          overlay.hidden = false;
+          startCameraBtn.disabled = true;
+          stopCameraBtn.disabled = false;
+          startCaptureBtn.disabled = false;
+          setCameraState("Camera ready", "ok");
+          appendLog("Camera started.");
+        } catch (err) {
+          console.error(err);
+          appendLog("Failed to start camera: " + err.message);
+          setCameraState("Camera error", "err");
+        }
+      }
+
+      function stopCamera() {
+        if (!mediaStream) return;
+        mediaStream.getTracks().forEach((t) => t.stop());
+        mediaStream = null;
+        video.srcObject = null;
+        overlay.hidden = true;
+        setCameraState("Camera idle", "");
+        startCameraBtn.disabled = false;
+        stopCameraBtn.disabled = true;
+        startCaptureBtn.disabled = true;
+        cancelCapture();
+        appendLog("Camera stopped.");
+      }
+
+      function updateProgress(count) {
+        bufferCount.textContent = String(count);
+        const ratio = Math.max(0, Math.min(1, count / TARGET_FRAMES));
+        progressBar.style.width = String(ratio * 100) + "%";
+      }
+
+      function pickTip(reason) {
+        const genericTips = [
+          "Raise your hand so it is fully inside the camera frame.",
+          "Hold your sign steady until the capture progress bar is full.",
+          "Avoid motion blur – keep your hand still during capture.",
+          "Make sure there is enough light and your hand is not in shadow."
+        ];
+
+        if (reason === "no_hand") {
+          return "No hand detected in several frames. Try moving a bit closer and ensure your full hand is visible.";
+        }
+
+        return genericTips[Math.floor(Math.random() * genericTips.length)];
+      }
+
+      function updateFeedback(predicted, confidence, target, topk) {
+        const hasTarget = !!target;
+        const confPct = typeof confidence === "number" ? (confidence * 100).toFixed(1) + "%" : "–";
+
+        if (!hasTarget) {
+          feedbackText.textContent = "Model predicted: " + (predicted || "–") + " (confidence " + confPct + ").";
+          tipsText.style.display = "none";
+          return;
+        }
+
+        if (!predicted) {
+          feedbackText.textContent = "No prediction returned. Please try capturing again.";
+          tipsText.style.display = "block";
+          tipsText.textContent = pickTip("generic");
+          return;
+        }
+
+        const THRESH = 0.7;
+        const match = predicted === target;
+        const highConf = typeof confidence === "number" && confidence >= THRESH;
+
+        if (match && highConf) {
+          feedbackText.textContent = "Great job! You correctly signed \"" + target + "\" (confidence " + confPct + ").";
+          tipsText.style.display = "none";
+        } else if (match) {
+          feedbackText.textContent =
+            "You signed \"" + target + "\" but the model is not very confident yet (confidence " + confPct + "). Try again holding the sign a bit more steadily.";
+          tipsText.style.display = "block";
+          tipsText.textContent = pickTip("low_conf");
+        } else {
+          const alt = predicted;
+          feedbackText.textContent =
+            "The model saw \"" + alt + "\" (confidence " + confPct + ") instead of your chosen letter \"" + target + "\". Let's try again.";
+          tipsText.style.display = "block";
+          tipsText.textContent = pickTip("mismatch");
+        }
+      }
+
+      async function sendCapturedSequence() {
+        if (!capturedFrames.length) return;
+        const targetUrl = window.location.origin + "/api/v1/webcam-sequence";
+        try {
+          const resp = await fetch(targetUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ frames: capturedFrames })
+          });
+          const json = await resp.json();
+
+          if (!resp.ok) {
+            const msg = json.detail || "HTTP " + resp.status;
+            appendLog("Server error: " + msg);
+            setPredictionState({ status: "error", error: msg });
+            return;
+          }
+
+          const top0 = Array.isArray(json.topk) && json.topk.length ? json.topk[0] : null;
+          setPredictionState({
+            status: "prediction",
+            label: json.predicted_label,
+            confidence: top0 ? top0.prob : undefined,
+            frames: TARGET_FRAMES,
+            topk: json.topk
+          });
+          updateFeedback(json.predicted_label, top0 ? top0.prob : undefined, targetLetter, json.topk);
+          appendLog("Received prediction for captured sequence.");
+        } catch (err) {
+          console.error(err);
+          appendLog("Error sending sequence: " + err.message);
+        }
+      }
+
+      function startCapture() {
+        if (!mediaStream || captureTimer) return;
+        capturedFrames = [];
+        updateProgress(0);
+        const ctx = overlay.getContext("2d");
+
+        captureTimer = setInterval(async () => {
+          try {
+            if (!mediaStream) return;
+            const { videoWidth, videoHeight } = video;
+            if (!videoWidth || !videoHeight) return;
+
+            overlay.width = videoWidth;
+            overlay.height = videoHeight;
+            ctx.clearRect(0, 0, overlay.width, overlay.height);
+            ctx.drawImage(video, 0, 0, videoWidth, videoHeight);
+
+            const dataUrl = overlay.toDataURL("image/jpeg", 0.7);
+            capturedFrames.push(dataUrl);
+
+            const count = capturedFrames.length;
+            updateProgress(count);
+
+            if (count >= TARGET_FRAMES) {
+              clearInterval(captureTimer);
+              captureTimer = null;
+              appendLog("Captured " + TARGET_FRAMES + " frames. Sending to server...");
+              await sendCapturedSequence();
+              startCaptureBtn.disabled = false;
+              cancelCaptureBtn.disabled = true;
+            }
+          } catch (err) {
+            console.error(err);
+            appendLog("Capture error: " + err.message);
+          }
+        }, CAPTURE_INTERVAL_MS);
+
+        startCaptureBtn.disabled = true;
+        cancelCaptureBtn.disabled = false;
+        appendLog("Started frame capture.");
+      }
+
+      function cancelCapture() {
+        if (captureTimer) {
+          clearInterval(captureTimer);
+          captureTimer = null;
+          appendLog("Capture cancelled.");
+        }
+        capturedFrames = [];
+        updateProgress(0);
+        cancelCaptureBtn.disabled = true;
+        startCaptureBtn.disabled = !mediaStream;
+      }
+
+      async function resetBuffer() {
+        try {
+          const resp = await fetch(window.location.origin + "/api/v1/webcam-reset", {
+            method: "POST"
+          });
+          const json = await resp.json();
+          const ctx = overlay.getContext("2d");
+          ctx.clearRect(0, 0, overlay.width, overlay.height);
+          bufferCount.textContent = "0";
+          progressBar.style.width = "0%";
+          predLabel.textContent = "–";
+          predStatus.textContent = "idle";
+          predConfidence.textContent = "Waiting for frames…";
+          topkList.innerHTML = "";
+          feedbackText.textContent = "";
+          tipsText.style.display = "none";
+          appendLog("Frame buffer reset on server.");
+        } catch (err) {
+          console.error(err);
+          appendLog("Failed to reset buffer: " + err.message);
+        }
+      }
+
+      startCameraBtn.addEventListener("click", startCamera);
+      stopCameraBtn.addEventListener("click", stopCamera);
+      startCaptureBtn.addEventListener("click", startCapture);
+      cancelCaptureBtn.addEventListener("click", cancelCapture);
+      resetBufferBtn.addEventListener("click", resetBuffer);
+
+      appendLog("Page loaded. Start the camera to begin.");
+    })();
+  </script>
+</body>
+</html>
+
